@@ -1,0 +1,11 @@
+dvc[gdriver]
+mlflow
+fastapi
+streamlit
+tqdm
+selenium
+pandas
+torch
+transformers
+datasets
+webdriver-manager
