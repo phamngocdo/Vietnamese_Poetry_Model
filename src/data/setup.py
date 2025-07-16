@@ -2,7 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 
-CHROME_DRIVER_PATH = "/usr/local/bin/chromedriver"
+CHROME_DRIVER_PATH = "/usr/local/bin/chromedriver" # Adjust this path as necessary
 TIME_OUT_INIT = 20
 
 def load_driver():
