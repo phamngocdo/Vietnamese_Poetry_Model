@@ -74,18 +74,6 @@ def clean_poem_html(html):
     html = re.sub(r"</?p>", "", html, flags=re.IGNORECASE)
     return html.strip()
 
-def extract_author(source_text):
-    """
-    Extracts the author's name from the source text.
-
-    Args:
-        source_text (str): The raw source text containing the author's name.
-
-    Returns:
-        str: The extracted author's name, or an empty string if not found.
-    """
-    match = re.match(r"^\s*([^-–—]+)", source_text.strip())
-    return match.group(1).strip() if match else ""
 
 def process_poem_content(html, poem_src, poem_url, poem_type=16, default_title=""):
     """
@@ -102,7 +90,6 @@ def process_poem_content(html, poem_src, poem_url, poem_type=16, default_title="
         list: A list of dictionaries containing poem metadata and content.
     """
     cleaned = clean_poem_html(html)
-    author = extract_author(poem_src)
 
     pattern = re.compile(r"<b>(.*?)</b>\s*\n{2,}", flags=re.IGNORECASE)
     matches = list(pattern.finditer(cleaned))
@@ -117,7 +104,6 @@ def process_poem_content(html, poem_src, poem_url, poem_type=16, default_title="
             content = cleaned[start:end].strip()
             poems.append({
                 "title": title,
-                "author": author,
                 "type": POEM_TYPE_MAPPING.get(poem_type),
                 "content": content,
                 "url": poem_url
@@ -125,7 +111,6 @@ def process_poem_content(html, poem_src, poem_url, poem_type=16, default_title="
     else:
         poems.append({
             "title": default_title,
-            "author": author,
             "type": POEM_TYPE_MAPPING.get(poem_type),
             "content": cleaned,
             "url": poem_url
@@ -225,7 +210,6 @@ if __name__ == "__main__":
     else:
         for poem in datasets:
             poem.setdefault("title", "Unknown Title")
-            poem.setdefault("author", "Unknown Author")
             poem.setdefault("type", "Unknown Type")
             poem.setdefault("content", "No Content")
             poem.setdefault("url", "No URL")
