@@ -3,6 +3,7 @@ import random
 import time
 import re
 import yaml
+import traceback
 
 from tqdm import tqdm
 from selenium.webdriver.support.ui import WebDriverWait
@@ -11,14 +12,15 @@ from selenium.webdriver.common.by import By
 
 from setup import load_driver
 
-WEB_DRIVER_TIMEOUT = 20
+WEB_DRIVER_TIMEOUT = 40
 
 with open("config/poem_type_maping.yaml", "r") as file:
     POEM_TYPE_MAPPING = yaml.safe_load(file)
 
 def extract_vietnamese_poem_links(driver, page_idx, poem_type=16):
     """
-    Extracts poem links from a specific page and poem type on thivien.net.
+    Extracts poem links from a specific page and poem type on thivien.net,
+    filtering by poems with score >= 4.
 
     Args:
         driver (webdriver): Selenium WebDriver instance.
@@ -26,17 +28,14 @@ def extract_vietnamese_poem_links(driver, page_idx, poem_type=16):
         poem_type (int): The type of poem to filter by.
 
     Returns:
-        list: A list of dictionaries containing poem titles and URLs.
+        list: A list of dictionaries containing poem titles, URLs, and scores.
     """
-    main_url = f"https://www.thivien.net/search-poem.php?PoemType={poem_type}&Country=2&ViewType=1&Page={page_idx}"
+    main_url = f"https://www.thivien.net/search-poem.php?PoemType={poem_type}&Country=2&ViewType=1&Age[]=3&Page={page_idx}&Age%5B%5D=3"
     driver.get(main_url)
-    time.sleep(random.uniform(3, 5))
+    time.sleep(random.uniform(3, 5)) 
 
-    content_tags_xpath = (
-        '//*[@class="page-content container"]'
-        '//div[@class="page-content-main"]'
-        '//div[@class="list-item"]'
-    )
+    content_tags_xpath = '//*[@class="page-content container"]//div[@class="page-content-main"]//div[@class="list-item"]'
+
     try:
         content_tags = driver.find_elements(By.XPATH, content_tags_xpath)
         poem_links = []
@@ -47,10 +46,11 @@ def extract_vietnamese_poem_links(driver, page_idx, poem_type=16):
                 url = element.get_attribute("href")
                 poem_links.append({
                     "title": title,
-                    "url": url
+                    "url": url,
+                
                 })
             except Exception as e:
-                print("Error extracting link: ", e)
+                print("Error extracting link or score: ", e)
                 continue
         return poem_links
     except Exception as e:
@@ -67,11 +67,11 @@ def clean_poem_html(html):
     Returns:
         str: The cleaned text content of the poem.
     """
-    html = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
+    html = re.sub(r"<img.*?>", "", html, flags=re.IGNORECASE)
     html = re.sub(r"<i>.*?</i>", "", html, flags=re.IGNORECASE | re.DOTALL)
-    html = re.sub(r"<b\s*>(.*?)</b>", r"\1", html, flags=re.IGNORECASE)
+    html = re.sub(r"<b>(.*?)</b>(?!\s*(?:<br\s*/?>\s*){2,})" , r"\ 1", html, flags=re.IGNORECASE)
+    html = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
     html = re.sub(r"</?p>", "", html, flags=re.IGNORECASE)
-    html = re.sub(r"<.*?>", "", html)  
     return html.strip()
 
 def extract_author(source_text):
@@ -104,7 +104,7 @@ def process_poem_content(html, poem_src, poem_url, poem_type=16, default_title="
     cleaned = clean_poem_html(html)
     author = extract_author(poem_src)
 
-    pattern = re.compile(r"(?:\n)?(.+?)\n{2,}", flags=re.IGNORECASE)
+    pattern = re.compile(r"<b>(.*?)</b>\s*\n{2,}", flags=re.IGNORECASE)
     matches = list(pattern.finditer(cleaned))
 
     poems = []
@@ -148,16 +148,17 @@ def scrape(driver, poem_url):
     time.sleep(random.uniform(3, 5)) 
 
     try:
-        poem_content_tag = WebDriverWait(driver, 20).until(
+        poem_content_tag = WebDriverWait(driver, WEB_DRIVER_TIMEOUT).until(
             EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "div.poem-content"))
         )
         html_content = poem_content_tag[0].get_attribute("innerHTML")
     except Exception as e:
         print(f"Error locating poem content: {e}")
+        traceback.print_exc()
         return []
 
     try:
-        poem_src_tag = WebDriverWait(driver, 20).until(
+        poem_src_tag = WebDriverWait(driver, WEB_DRIVER_TIMEOUT).until(
             EC.presence_of_element_located((By.XPATH, '//div[@class="small"]'))
         )
         poem_src = poem_src_tag.text
@@ -166,41 +167,70 @@ def scrape(driver, poem_url):
 
     return process_poem_content(html_content, poem_src, poem_url)
 
-def scrape_poem_list(driver, num_pages=10):
+def scrape_poem_list_with_type(driver, num_pages=10, poem_type=16):
     """
-    Scrapes multiple pages of poems and compiles the data into a list.
+    Scrapes a list of Vietnamese poems from thivien.net across multiple pages and types.
 
     Args:
-        driver (webdriver): Selenium WebDriver instance.
-        num_pages (int): The number of pages to scrape.
+        driver (webdriver): Selenium WebDriver instance used for web scraping.
+        num_pages (int): Number of pages to scrape for each poem type.
 
     Returns:
-        list: A list of dictionaries containing metadata and content for all poems.
+        list: A list of dictionaries, each containing metadata and content of a scraped poem.
+              The metadata includes title, author, type, content, and URL.
     """
+
     datasets = []
-    for page_idx in tqdm(range(1, num_pages + 1)):
-        poem_type = random.randint(13, 20)
+    for page_idx in tqdm(range(1, num_pages + 1), desc=f"Type {poem_type}"):
         poem_links = extract_vietnamese_poem_links(driver, page_idx, poem_type)
         for poem in poem_links:
             url = poem["url"]
             try:
                 poems = scrape(driver, url)
+                for poem_dict in poems:
+                    poem_dict["type"] = POEM_TYPE_MAPPING.get(poem_type)
                 datasets.extend(poems)
             except Exception as e:
                 print(f"Error processing {url}: {e}")
                 continue
     return datasets
 
-if __name__ == "__main__":
+def scrape_poem_list(driver, num_pages=10):
+    """
+    Scrapes a list of Vietnamese poems from thivien.net across multiple pages and types.
 
+    Args:
+        driver (webdriver): Selenium WebDriver instance used for web scraping.
+        num_pages (int): Number of pages to scrape for each poem type.
+
+    Returns:
+        list: A list of dictionaries, each containing metadata and content of a scraped poem.
+              The metadata includes title, author, type, content, and URL.
+    """
+    datasets = []
+    for poem_type in POEM_TYPE_MAPPING.keys():
+        datasets.extend(scrape_poem_list_with_type(driver, num_pages, poem_type))
+    return datasets
+
+if __name__ == "__main__":
     driver = load_driver()
-    datasets = scrape_poem_list(driver, 20)
+    datasets = scrape_poem_list_with_type(driver, 10, 16) # Adjust the type of poem as needed or use scrape_poem_list for all types
     try:
         driver.quit()
     except Exception as e:
         print(f"Error when stopping driver: {e}")
     
-    df = pd.DataFrame(datasets)
-    df = df[["title", "author", "type", "content", "url"]] 
-
-    df.to_csv("data/poems_dataset.csv", index=True)
+    if not datasets:
+        print("No data was scraped.")
+    else:
+        for poem in datasets:
+            poem.setdefault("title", "Unknown Title")
+            poem.setdefault("author", "Unknown Author")
+            poem.setdefault("type", "Unknown Type")
+            poem.setdefault("content", "No Content")
+            poem.setdefault("url", "No URL")
+        
+        df = pd.DataFrame(datasets)
+        print(df.columns)  
+        df = df[["title", "author", "type", "content", "url"]] 
+        df.to_csv("data/poems_dataset.csv", index=True)
