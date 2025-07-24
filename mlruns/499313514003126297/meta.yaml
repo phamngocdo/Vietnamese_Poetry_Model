@@ -1,0 +1,6 @@
+artifact_location: file:///kaggle/working/vietnamese-poems/Vietnamese_Poetry_Model//mlruns/499313514003126297
+creation_time: 1753370348453
+experiment_id: '499313514003126297'
+last_update_time: 1753370348453
+lifecycle_stage: active
+name: gpt2-viwiki

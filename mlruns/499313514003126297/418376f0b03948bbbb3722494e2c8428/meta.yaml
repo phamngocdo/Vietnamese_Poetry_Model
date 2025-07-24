@@ -1,0 +1,14 @@
+artifact_uri: file:///kaggle/working/vietnamese-poems/Vietnamese_Poetry_Model//mlruns/499313514003126297/418376f0b03948bbbb3722494e2c8428/artifacts
+end_time: 1753370503392
+entry_point_name: ''
+experiment_id: '499313514003126297'
+lifecycle_stage: active
+run_id: 418376f0b03948bbbb3722494e2c8428
+run_name: gpt2-poem-run
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1753370404014
+status: 3
+tags: []
+user_id: root
