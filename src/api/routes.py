@@ -3,25 +3,37 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 
 from llm.gpt2_poetry import GPT2Poetry
+from pydantic import BaseModel
+
+class GenerationRequest(BaseModel):
+    prompt: str
+    max_length: int = 50
+    temperature: float = 0.8
+    top_k: int = 50
+    top_p: float = 0.95
+    repetition_penalty: float = 1.2
+
 
 model_router = APIRouter()
 
-@model_router.get("/generate_poem")
-async def generate_poem(prompt: str, 
-                        max_length: int = 50, 
-                        temperature: float = 0.8, 
-                        top_k: int = 50, 
-                        top_p: float = 0.95, 
-                        repetition_penalty: float = 1.2
-    ):
+@model_router.post("/generate_poem")
+async def generate_poem(request: GenerationRequest):
     """
     Generate a poem based on the given prompt.
     """
+
+    prompt = request.prompt
+    max_length = request.max_length
+    temperature = request.temperature
+    top_k = request.top_k
+    top_p = request.top_p
+    repetition_penalty = request.repetition_penalty
+
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
     
-    if not (max_length > 0):
-        raise HTTPException(status_code=400, detail="Max length must be greater than 0")
+    if not (0 < max_length <= 200):
+        raise HTTPException(status_code=400, detail="Max length must be between 1 and 200")
     
     if not (0 <= temperature <= 2):
         raise HTTPException(status_code=400, detail="Temperature must be between 0 and 2")
