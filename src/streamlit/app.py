@@ -2,6 +2,8 @@ import streamlit as st
 import requests
 import time
 
+API = "http://localhost:8000/api/generate_poem/"
+
 st.set_page_config(page_title="Poetry Generator", page_icon="", layout="centered")
 
 st.title("Vietnamese Poetry Generator")
@@ -22,7 +24,7 @@ if st.button("🚀 Tạo bài thơ"):
     with st.spinner("Đang tạo thơ..."):
         time.sleep(1)
 
-        response = requests.post("http://localhost:8000/api/generate_poem/", json={
+        response = requests.post(API, json={
             "prompt": prompt,
             "temperature": temperature,
             "top_k": top_k,

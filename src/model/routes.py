@@ -2,7 +2,7 @@ from fastapi.routing import APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import HTTPException
 
-from llm.gpt2_poetry import GPT2Poetry
+from gpt2_poetry import GPT2Poetry
 from pydantic import BaseModel
 
 class GenerationRequest(BaseModel):

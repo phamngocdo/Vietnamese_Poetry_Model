@@ -2,7 +2,7 @@ import uvicorn
 from pathlib import Path
 from fastapi import FastAPI
 
-from llm.gpt2_poetry import GPT2Poetry
+from gpt2_poetry import GPT2Poetry
 from routes import model_router
 
 

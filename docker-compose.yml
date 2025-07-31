@@ -1,0 +1,16 @@
+services:
+  model:
+    build:
+      context: ./src/model/
+      dockerfile: Dockerfile.model
+    container_name: poem_gen_api
+    ports:
+      - "8000:8000"
+  
+  streamlit:
+    build:
+      context: ./src/streamlit/
+      dockerfile: Dockerfile.streamlit
+    container_name: poem_gen_ui
+    ports:
+      - "8051:8051"
