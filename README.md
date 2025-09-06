@@ -338,7 +338,7 @@ Nã
 - **Data Scraping:** Selenium
 
 
-### Run app
+## Run app
 Install docker if you don't have, then:
 ```bash
 docker compose up -d
@@ -347,6 +347,7 @@ docker compose up -d
 To stop app:
 ```bash
 docker compose down
+```
 
 
 ## License
