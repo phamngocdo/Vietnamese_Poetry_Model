@@ -2,6 +2,7 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from pathlib import Path
 
 MODEL_DIR = str(Path(__file__).resolve().parent / "gpt2-poetry")
+MODEL_NAME = "ngocdo992k4/vietnamese-poetry"
 
 class GPT2Poetry:
     __instance = None
